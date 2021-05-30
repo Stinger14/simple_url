@@ -55,6 +55,28 @@ def index():
 
     return render_template('index.html')
 
+@app.route('/<id>')
+def url_redirect(id):
+    conn = get_db_connection()
+
+    og_id = hashids.decode(id)
+    if og_id:
+        og_id = og_id[0]
+        url_data = conn.execute('SELECT original_url, clicks FROM urls WHERE id=(?)', (og_id,)
+                                ).fetchone()
+
+        og_url = url_data['original_url']
+        clicks = url_data['clicks']
+
+        conn.execute('UPDATE urls SET clicks = ? WHERE id = ?',
+                     (clicks + 1, og_id))
+
+        conn.commit()
+        conn.close()
+        return redirect(og_url)
+    else:
+        flash('Invalid URL')
+        return redirect(url_for('index'))
 
 
 
